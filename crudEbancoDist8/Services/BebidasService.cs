@@ -54,6 +54,8 @@ public class BebidasService : IBebidasService
 
         if (categoria == null)
         {
+            _logger.LogWarning("Tentativa de criar bebida com categoria inexistente. CategoryId: {CategoryId}", createBebidaDto.CategoryId);
+
             return null;
         }
 
@@ -62,6 +64,11 @@ public class BebidasService : IBebidasService
 
         _context.Bebidas.Add(bebida);
         await _context.SaveChangesAsync();
+        _logger.LogInformation(
+        "Bebida criada. BebidaId: {BebidaId}, CategoryId: {CategoryId}",
+        bebida.Id,
+        bebida.CategoryId);
+
 
         return new ReadBebidaDto
         {
@@ -89,13 +96,28 @@ public class BebidasService : IBebidasService
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == updateBebidaDto.CategoryId);
 
-        if (categoria == null) { return (null, "categoria_nao_encontrada"); }
+        if (categoria == null) {
+
+            _logger.LogWarning(
+            "Tentativa de atualizar bebida inexistente. BebidaId: {BebidaId}",
+            id
+        );
+
+
+            return (null, "categoria_nao_encontrada"); }
 
         _mapper.Map(updateBebidaDto, bebida);
 
         bebida.Name = bebida.Name.Trim();
 
         await _context.SaveChangesAsync();
+        _logger.LogInformation(
+        "Bebida atualizada. BebidaId: {BebidaId}, CategoryId: {CategoryId}, Name: {Name}, Quantity: {Quantity}, Price: {Price}",
+        bebida.Id,
+        bebida.CategoryId,
+        bebida.Name,
+        bebida.Quantity,
+        bebida.Price);
 
         var updatedBebidaDto = new ReadBebidaDto
         {
@@ -161,10 +183,20 @@ public class BebidasService : IBebidasService
             .FirstOrDefaultAsync(b => b.Id == id);
         if (bebida == null)
         {
+            _logger.LogWarning(
+            "Tentativa de excluir bebida inexistente. BebidaId: {BebidaId}",
+            id);
+
+
             return false;
         }
         _context.Bebidas.Remove(bebida);
         await _context.SaveChangesAsync();
+        _logger.LogInformation(
+            "Bebida deletada. BebidaId: {BebidaId}, CategoryId: {CategoryId}",
+            bebida.Id,
+            bebida.CategoryId
+        );
         return true;
     }
     public async Task<PagedResult<ReadBebidaDto>> GetPaginadoAsync(
