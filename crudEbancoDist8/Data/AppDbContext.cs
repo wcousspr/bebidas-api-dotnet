@@ -1,19 +1,21 @@
 ﻿using crudEbancoDist8.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace crudEbancoDist.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<Usuario>
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        public AppDbContext(DbContextOptions<AppDbContext> options) 
+            : base(options)
         {
-
-
         }
+
+
+
         public DbSet<Bebidas> Bebidas { get; set; } = null!;
 
         public DbSet<Categoria> Categorias { get; set; } = null!;
-
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

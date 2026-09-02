@@ -11,6 +11,8 @@ public static class DependencyInjectionExtensions
     {
         services.AddScoped<IBebidasService, BebidasService>();
 
+        services.AddScoped<ITokenService, TokenService>();
+
         services.AddAutoMapper(
        cfg => { },
        typeof(BebidasProfile)
