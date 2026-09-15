@@ -117,6 +117,30 @@ builder.Services.AddApplicationServices();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider
+        .GetRequiredService<RoleManager<IdentityRole>>();
+
+    await IdentitySeeder.SeedRolesAsync(roleManager);
+
+    if (app.Environment.IsDevelopment())
+    {
+        var adminUserId =
+            app.Configuration["Seed:AdminUserId"];
+
+        if (!string.IsNullOrWhiteSpace(adminUserId))
+        {
+            var userManager = scope.ServiceProvider
+                .GetRequiredService<UserManager<Usuario>>();
+
+            await IdentitySeeder.SeedAdminAsync(
+                userManager,
+                adminUserId);
+        }
+    }
+}
+
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())

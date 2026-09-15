@@ -1,0 +1,193 @@
+[1mdiff --git a/crudEbancoDist8/Controllers/AccountController.cs b/crudEbancoDist8/Controllers/AccountController.cs[m
+[1mindex 6f868c5..fc28987 100644[m
+[1m--- a/crudEbancoDist8/Controllers/AccountController.cs[m
+[1m+++ b/crudEbancoDist8/Controllers/AccountController.cs[m
+[36m@@ -1,7 +1,12 @@[m
+[31m-﻿using System.Security.Claims;[m
+[32m+[m[32m﻿using crudEbancoDist8.Authorization;[m
+[32m+[m[32musing crudEbancoDist8.DTOs;[m
+ using crudEbancoDist8.DTOs.Auth;[m
+[32m+[m[32musing crudEbancoDist8.Models;[m
+ using Microsoft.AspNetCore.Authorization;[m
+[32m+[m[32musing Microsoft.AspNetCore.Identity;[m
+ using Microsoft.AspNetCore.Mvc;[m
+[32m+[m[32musing Microsoft.EntityFrameworkCore;[m
+[32m+[m[32musing System.Security.Claims;[m
+ [m
+ namespace crudEbancoDist8.Controllers[m
+ {[m
+[36m@@ -9,7 +14,17 @@[m [mnamespace crudEbancoDist8.Controllers[m
+     [Route("api/[controller]")][m
+     [Authorize][m
+     public class AccountController : ControllerBase[m
+[32m+[m
+     {[m
+[32m+[m[32m        private readonly UserManager<Usuario> _userManager;[m
+[32m+[m
+[32m+[m[32m        public AccountController(UserManager<Usuario> userManager)[m
+[32m+[m[32m        {[m
+[32m+[m[32m            _userManager = userManager;[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m
+[32m+[m
+         [HttpGet("profile")][m
+         public IActionResult GetProfile()[m
+         {[m
+[36m@@ -40,6 +55,38 @@[m [mnamespace crudEbancoDist8.Controllers[m
+             };[m
+ [m
+             return Ok(profile);[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        [Authorize(Roles = AppRoles.Admin)][m
+[32m+[m[32m        [HttpGet("users")][m
+[32m+[m[32m        public async Task<ActionResult<List<UserListDto>>> GetUsers()[m
+[32m+[m[32m        {[m
+[32m+[m[32m            var usuarios = await _userManager.Users[m
+[32m+[m[32m                .AsNoTracking()[m
+[32m+[m[32m                .OrderBy(usuario => usuario.UserName)[m
+[32m+[m[32m                .Select(usuario => new UserListDto[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    Id = usuario.Id,[m
+[32m+[m[32m                    UserName = usuario.UserName,[m
+[32m+[m[32m                    Email = usuario.Email[m
+[32m+[m
+[32m+[m[32m                })[m
+[32m+[m[32m            .ToListAsync();[m
+[32m+[m
+[32m+[m[32m            return Ok(usuarios);[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m
+[32m+[m[41m        [m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m
+[32m+[m
+         }[m
+     }[m
+[31m-}[m
+\ No newline at end of file[m
+[1mdiff --git a/crudEbancoDist8/Controllers/AuthController.cs b/crudEbancoDist8/Controllers/AuthController.cs[m
+[1mindex bb75c6c..291044a 100644[m
+[1m--- a/crudEbancoDist8/Controllers/AuthController.cs[m
+[1m+++ b/crudEbancoDist8/Controllers/AuthController.cs[m
+[36m@@ -5,6 +5,7 @@[m [musing Microsoft.AspNetCore.Mvc;[m
+ using crudEbancoDist8.Interfaces;[m
+ using System.Security.Claims;[m
+ using Microsoft.AspNetCore.Authorization;[m
+[32m+[m[32musing crudEbancoDist8.Authorization;[m
+ [m
+ namespace crudEbancoDist8.Controllers[m
+ {[m
+[36m@@ -67,6 +68,25 @@[m [mnamespace crudEbancoDist8.Controllers[m
+                 });[m
+             }[m
+ [m
+[32m+[m[32m            var roleResult = await _userManager.AddToRoleAsync([m
+[32m+[m[32m            usuario,[m
+[32m+[m[32m            AppRoles.User[m
+[32m+[m[32m);[m
+[32m+[m
+[32m+[m[32m            if (!roleResult.Succeeded)[m
+[32m+[m[32m            {[m
+[32m+[m[32m                _logger.LogError([m
+[32m+[m[32m                    "Usuário criado, mas houve falha ao atribuir a role User. UsuarioId: {UsuarioId}. Codigos: {Codigos}",[m
+[32m+[m[32m                    usuario.Id,[m
+[32m+[m[32m                    string.Join(", ", roleResult.Errors.Select(e => e.Code))[m
+[32m+[m[32m                );[m
+[32m+[m
+[32m+[m[32m                return Problem([m
+[32m+[m[32m                    statusCode: StatusCodes.Status500InternalServerError,[m
+[32m+[m[32m                    title: "Não foi possível concluir o cadastro."[m
+[32m+[m[32m                );[m
+[32m+[m[32m            }[m
+[32m+[m
+             _logger.LogInformation([m
+                 "Usuário cadastrado. UsuarioId: {UsuarioId}",[m
+                 usuario.Id[m
+[36m@@ -166,13 +186,23 @@[m [mnamespace crudEbancoDist8.Controllers[m
+                 .Select(claim => claim.Value)[m
+                 .ToList();[m
+ [m
+[31m-            return Ok(new[m
+[32m+[m[32m            if (userId is null || userName is null || email is null)[m
+             {[m
+[31m-                userId,[m
+[31m-                userName,[m
+[31m-                email,[m
+[31m-                roles[m
+[31m-            });[m
+[32m+[m[32m                return Unauthorized(new[m
+[32m+[m[32m                {[m
+[32m+[m[32m                    message = "Identidade sem os dados obrigatórios."[m
+[32m+[m[32m                });[m
+[32m+[m[32m            }[m
+[32m+[m
+[32m+[m[32m            var profile = new ProfileDto[m
+[32m+[m[32m            {[m
+[32m+[m[32m                Id = userId,[m
+[32m+[m[32m                UserName = userName,[m
+[32m+[m[32m                Email = email,[m
+[32m+[m[32m                Roles = roles[m
+[32m+[m[32m            };[m
+[32m+[m
+[32m+[m[32m            return Ok(profile);[m
+         }[m
+     }[m
+ }[m
+\ No newline at end of file[m
+[1mdiff --git a/crudEbancoDist8/DTOs/Auth/ProfileDto.cs b/crudEbancoDist8/DTOs/Auth/ProfileDto.cs[m
+[1mindex b2d7840..ebae035 100644[m
+[1m--- a/crudEbancoDist8/DTOs/Auth/ProfileDto.cs[m
+[1m+++ b/crudEbancoDist8/DTOs/Auth/ProfileDto.cs[m
+[36m@@ -12,5 +12,7 @@[m [mnamespace crudEbancoDist8.DTOs.Auth[m
+ [m
+         public string Email { get; set; } = string.Empty;[m
+ [m
+[32m+[m[32m        public List<string> Roles { get; set; } = new();[m
+[32m+[m
+     }[m
+ }[m
+[1mdiff --git a/crudEbancoDist8/Program.cs b/crudEbancoDist8/Program.cs[m
+[1mindex 59204d6..d433b23 100644[m
+[1m--- a/crudEbancoDist8/Program.cs[m
+[1m+++ b/crudEbancoDist8/Program.cs[m
+[36m@@ -117,6 +117,30 @@[m [mbuilder.Services.AddApplicationServices();[m
+ [m
+ var app = builder.Build();[m
+ [m
+[32m+[m[32musing (var scope = app.Services.CreateScope())[m
+[32m+[m[32m{[m
+[32m+[m[32m    var roleManager = scope.ServiceProvider[m
+[32m+[m[32m        .GetRequiredService<RoleManager<IdentityRole>>();[m
+[32m+[m
+[32m+[m[32m    await IdentitySeeder.SeedRolesAsync(roleManager);[m
+[32m+[m
+[32m+[m[32m    if (app.Environment.IsDevelopment())[m
+[32m+[m[32m    {[m
+[32m+[m[32m        var adminUserId =[m
+[32m+[m[32m            app.Configuration["Seed:AdminUserId"];[m
+[32m+[m
+[32m+[m[32m        if (!string.IsNullOrWhiteSpace(adminUserId))[m
+[32m+[m[32m        {[m
+[32m+[m[32m            var userManager = scope.ServiceProvider[m
+[32m+[m[32m                .GetRequiredService<UserManager<Usuario>>();[m
+[32m+[m
+[32m+[m[32m            await IdentitySeeder.SeedAdminAsync([m
+[32m+[m[32m                userManager,[m
+[32m+[m[32m                adminUserId);[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+[32m+[m
+ app.UseMiddleware<ExceptionMiddleware>();[m
+ [m
+ if (app.Environment.IsDevelopment())[m

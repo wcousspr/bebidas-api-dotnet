@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using crudEbancoDist8.Interfaces;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using crudEbancoDist8.Authorization;
 
 namespace crudEbancoDist8.Controllers
 {
@@ -65,6 +66,25 @@ namespace crudEbancoDist8.Controllers
                     errors = result.Errors.Select(
                         error => error.Description)
                 });
+            }
+
+            var roleResult = await _userManager.AddToRoleAsync(
+            usuario,
+            AppRoles.User
+);
+
+            if (!roleResult.Succeeded)
+            {
+                _logger.LogError(
+                    "Usuário criado, mas houve falha ao atribuir a role User. UsuarioId: {UsuarioId}. Codigos: {Codigos}",
+                    usuario.Id,
+                    string.Join(", ", roleResult.Errors.Select(e => e.Code))
+                );
+
+                return Problem(
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    title: "Não foi possível concluir o cadastro."
+                );
             }
 
             _logger.LogInformation(
@@ -166,13 +186,23 @@ namespace crudEbancoDist8.Controllers
                 .Select(claim => claim.Value)
                 .ToList();
 
-            return Ok(new
+            if (userId is null || userName is null || email is null)
             {
-                userId,
-                userName,
-                email,
-                roles
-            });
+                return Unauthorized(new
+                {
+                    message = "Identidade sem os dados obrigatórios."
+                });
+            }
+
+            var profile = new ProfileDto
+            {
+                Id = userId,
+                UserName = userName,
+                Email = email,
+                Roles = roles
+            };
+
+            return Ok(profile);
         }
     }
 }
