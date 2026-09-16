@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using static System.Net.WebRequestMethods;
 using crudEbancoDist8.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using crudEbancoDist8.Authorization;
 
 namespace crudEbancoDist8.Controllers
 
@@ -14,6 +16,7 @@ namespace crudEbancoDist8.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class BebidasController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -60,6 +63,7 @@ namespace crudEbancoDist8.Controllers
             return Ok(bebida);
         }
 
+        [Authorize(Policy = AppPolicies.GerenciarBebidas)]
         [HttpPost]
         public async Task<ActionResult<ReadBebidaDto>> CreateBebida(
         [FromBody] CreateBebidaDto bebidaDto)
@@ -79,6 +83,7 @@ namespace crudEbancoDist8.Controllers
 
         }
 
+        [Authorize(Policy = AppPolicies.GerenciarBebidas)]
         [HttpPost("lote")]
         public async Task<IActionResult> CreateBebidasInLote([FromBody] List<CreateBebidaDto> dtos)
         {
@@ -94,7 +99,7 @@ namespace crudEbancoDist8.Controllers
             return StatusCode(StatusCodes.Status201Created, resultado);
         }
 
-
+        [Authorize(Policy = AppPolicies.GerenciarBebidas)]
         [HttpPut("{id:int}")]
         public async Task<ActionResult<ReadBebidaDto>> UpdateBebida(
         int id,
@@ -130,6 +135,7 @@ namespace crudEbancoDist8.Controllers
 
         }
 
+        [Authorize(Policy = AppPolicies.GerenciarBebidas)]
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteBebida(int id)
         {

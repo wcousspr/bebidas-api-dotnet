@@ -1,6 +1,7 @@
 ﻿using crudEbancoDist8.Authorization;
 using crudEbancoDist8.DTOs;
 using crudEbancoDist8.DTOs.Auth;
+using crudEbancoDist8.Interfaces;
 using crudEbancoDist8.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -18,13 +19,16 @@ namespace crudEbancoDist8.Controllers
     {
         private readonly UserManager<Usuario> _userManager;
 
-        public AccountController(UserManager<Usuario> userManager)
+        private readonly IUserService _userService;
+
+        public AccountController(UserManager<Usuario> userManager, IUserService userService)
         {
             _userManager = userManager;
+            _userService = userService;
         }
 
 
-
+        [Authorize]
         [HttpGet("profile")]
         public IActionResult GetProfile()
         {
@@ -57,26 +61,16 @@ namespace crudEbancoDist8.Controllers
             return Ok(profile);
         }
 
-        [Authorize(Roles = AppRoles.Admin)]
+        [Authorize(Policy = AppPolicies.GerenciarUsuarios)]
         [HttpGet("users")]
         public async Task<ActionResult<List<UserListDto>>> GetUsers()
         {
-            var usuarios = await _userManager.Users
-                .AsNoTracking()
-                .OrderBy(usuario => usuario.UserName)
-                .Select(usuario => new UserListDto
-                {
-                    Id = usuario.Id,
-                    UserName = usuario.UserName,
-                    Email = usuario.Email
-
-                })
-            .ToListAsync();
+            var usuarios = await _userService.GetUsersAsync();
 
             return Ok(usuarios);
         }
 
-        [Authorize(Roles = AppRoles.Admin)]
+        [Authorize(Policy = AppPolicies.GerenciarUsuarios)]
         [HttpPost("users/{userId}/roles/admin")]
         public async Task<IActionResult> PromoteToAdmin(
         [FromRoute] string userId)

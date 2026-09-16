@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using crudEbancoDist8.Authorization;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -91,6 +92,27 @@ builder.Services
                 ClockSkew = TimeSpan.Zero
             };
     });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        AppPolicies.GerenciarBebidas,
+        policy =>
+        {
+            policy.RequireAuthenticatedUser();
+            policy.RequireRole(AppRoles.Admin);
+        });
+
+    options.AddPolicy(
+        AppPolicies.GerenciarUsuarios,
+        policy =>
+        {
+            policy.RequireAuthenticatedUser();
+            policy.RequireRole(AppRoles.Admin);
+        });
+});
+
+
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
