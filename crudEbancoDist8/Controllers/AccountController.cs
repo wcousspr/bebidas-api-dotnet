@@ -76,17 +76,47 @@ namespace crudEbancoDist8.Controllers
             return Ok(usuarios);
         }
 
+        [Authorize(Roles = AppRoles.Admin)]
+        [HttpPost("users/{userId}/roles/admin")]
+        public async Task<IActionResult> PromoteToAdmin(
+        [FromRoute] string userId)
+        {
+            var usuario = await _userManager.FindByIdAsync(userId);
+            
+            if (usuario is null)
+            {
+                return NotFound(new
+                {
+                    message = "Usuário não encontrado."
+                });
+            }
 
-        
+            var jaEhAdmin = await _userManager.IsInRoleAsync(usuario,AppRoles.Admin);
 
+            if (jaEhAdmin)
+            {
+                return Ok(new
+                {
+                    message = "O usuário já é administrador."
+                });
+            }
 
+            var result = await _userManager.AddToRoleAsync(usuario, AppRoles.Admin);
 
+            if (!result.Succeeded)
+            {
+                return BadRequest(new
+                {
+                    message = "Erro ao promover usuário para administrador."
+                });
+            }
 
-
-
-
-
-
-
+            return Ok(new
+            {
+                message = "Usuário promovido para administrador com sucesso."
+            });
         }
+
+
     }
+}
