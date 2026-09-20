@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using crudEbancoDist8.Services.Results;
 
 namespace crudEbancoDist8.Controllers
 {
@@ -17,13 +18,13 @@ namespace crudEbancoDist8.Controllers
     public class AccountController : ControllerBase
 
     {
-        private readonly UserManager<Usuario> _userManager;
+        
 
         private readonly IUserService _userService;
 
-        public AccountController(UserManager<Usuario> userManager, IUserService userService)
+        public AccountController(IUserService userService)
         {
-            _userManager = userManager;
+            
             _userService = userService;
         }
 
@@ -70,46 +71,42 @@ namespace crudEbancoDist8.Controllers
             return Ok(usuarios);
         }
 
+        
         [Authorize(Policy = AppPolicies.GerenciarUsuarios)]
         [HttpPost("users/{userId}/roles/admin")]
         public async Task<IActionResult> PromoteToAdmin(
         [FromRoute] string userId)
         {
-            var usuario = await _userManager.FindByIdAsync(userId);
-            
-            if (usuario is null)
+            var result = await _userService.PromoteToAdminAsync(userId);
+
+            switch (result)
             {
-                return NotFound(new
-                {
-                    message = "Usuário não encontrado."
-                });
+                case PromoteUserResult.UserNotFound:
+                    return NotFound(new
+                    {
+                        message = "Usuário não encontrado."
+                    });
+
+                case PromoteUserResult.AlreadyAdmin:
+                    return Ok(new
+                    {
+                        message = "O usuário já é administrador."
+                    });
+
+                case PromoteUserResult.Promoted:
+                    return Ok(new
+                    {
+                        message = "Usuário promovido para administrador com sucesso."
+                    });
+
+                default:
+                    throw new InvalidOperationException(
+                        "Resultado de promoção não reconhecido.");
             }
-
-            var jaEhAdmin = await _userManager.IsInRoleAsync(usuario,AppRoles.Admin);
-
-            if (jaEhAdmin)
-            {
-                return Ok(new
-                {
-                    message = "O usuário já é administrador."
-                });
-            }
-
-            var result = await _userManager.AddToRoleAsync(usuario, AppRoles.Admin);
-
-            if (!result.Succeeded)
-            {
-                return BadRequest(new
-                {
-                    message = "Erro ao promover usuário para administrador."
-                });
-            }
-
-            return Ok(new
-            {
-                message = "Usuário promovido para administrador com sucesso."
-            });
         }
+
+
+
 
 
     }
