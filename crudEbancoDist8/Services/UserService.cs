@@ -39,6 +39,10 @@ namespace crudEbancoDist8.Services
 
             if (usuario is null)
             {
+                _logger.LogWarning(
+                "Tentativa de promover usuário inexistente. UserId: {UserId}",
+                userId);
+
                 return PromoteUserResult.UserNotFound;
             }
 
