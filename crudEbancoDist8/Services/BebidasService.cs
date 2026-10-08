@@ -207,7 +207,10 @@ public class BebidasService : IBebidasService
     string? name,
     int? categoryId,
     decimal? minPrice,
-    decimal? maxPrice)
+    decimal? maxPrice,
+    int? minQuantity,
+    int? maxQuantity
+    )
     {
         IQueryable<Bebidas> query = _context.Bebidas
             .AsNoTracking();
@@ -238,6 +241,20 @@ public class BebidasService : IBebidasService
             query = query.Where(b =>
                 b.Price <= maxPrice.Value);
         }
+
+        if (minQuantity.HasValue)
+        {
+            query = query.Where(b =>
+                b.Quantity >= minQuantity.Value);
+        }
+
+        if (maxQuantity.HasValue)
+        {
+            query = query.Where(b =>
+                b.Quantity <= maxQuantity.Value);
+        }
+
+        
 
         // Conta depois dos filtros e antes da paginação
         var totalRegistros = await query.CountAsync();
@@ -289,7 +306,8 @@ public class BebidasService : IBebidasService
             QuantidadeRetornada = bebidas.Count,
             OrderBy = orderBy,
             Direction = direction,
-            Dados = bebidas
+            Dados = bebidas,
+            
         };
     }
 

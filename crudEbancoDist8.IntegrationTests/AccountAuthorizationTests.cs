@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Moq;
+using System.Net.Http.Json;
+using Microsoft.AspNetCore.Mvc;
 
 
 namespace crudEbancoDist8.IntegrationTests
@@ -173,6 +175,86 @@ namespace crudEbancoDist8.IntegrationTests
 
 
 
+        }
+
+        [Fact]
+        public async Task PromoteToAdmin_QuandoServiceFalha_DeveRetornarProblemDetails500()
+        {
+            // Arrange
+            var userId = "usuario-alvo";
+            var mensagemInterna = "Falha interna simulada: codigo PRIVADO-123.";
+
+            var userServiceMock =
+                new Mock<IUserService>(MockBehavior.Strict);
+
+            userServiceMock
+                .Setup(service => service.PromoteToAdminAsync(userId))
+                .ThrowsAsync(new InvalidOperationException(mensagemInterna));
+
+            using var factory = _factory.WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureTestServices(services =>
+                {
+                    services.RemoveAll<IUserService>();
+
+                    services.AddScoped<IUserService>(
+                        _ => userServiceMock.Object);
+                });
+            });
+
+            using var client = factory.CreateClient(
+                new WebApplicationFactoryClientOptions
+                {
+                    BaseAddress = new Uri("https://localhost"),
+                    AllowAutoRedirect = false
+                });
+
+            client.DefaultRequestHeaders.Add(
+                TestAuthHandler.RoleHeader,
+                AppRoles.Admin);
+
+            // Act
+            using var resposta = await client.PostAsync(
+                $"/api/Account/users/{userId}/roles/admin",
+                content: null);
+
+            // Assert: status e formato
+            Assert.Equal(
+                HttpStatusCode.InternalServerError,
+                resposta.StatusCode);
+
+            Assert.Equal(
+                "application/problem+json",
+                resposta.Content.Headers.ContentType?.MediaType);
+
+            // Assert: conteúdo da resposta
+            var problem = await resposta.Content
+                .ReadFromJsonAsync<ProblemDetails>();
+
+            Assert.NotNull(problem);
+            Assert.Equal(500, problem.Status);
+
+            Assert.Equal(
+                "Ocorreu um erro inesperado.",
+                problem.Title);
+
+            Assert.Equal(
+                "Por favor, tente novamente mais tarde ou entre em contato com o suporte.",
+                problem.Detail);
+
+            Assert.Equal(
+                $"/api/Account/users/{userId}/roles/admin",
+                problem.Instance);
+
+            // Assert: não expor a mensagem interna em nenhuma parte do corpo
+            var corpo = await resposta.Content.ReadAsStringAsync();
+
+            Assert.DoesNotContain(mensagemInterna, corpo);
+            Assert.DoesNotContain("PRIVADO-123", corpo);
+
+            userServiceMock.Verify(
+                service => service.PromoteToAdminAsync(userId),
+                Times.Once);
         }
 
 

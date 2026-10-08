@@ -28,6 +28,10 @@ public interface IBebidasService
         string? name,
         int? categoryId,
         decimal? minPrice,
-        decimal? maxPrice);
+        decimal? maxPrice,
+        int? minQuantity,
+        int? maxQuantity
+    );
 }
+
 

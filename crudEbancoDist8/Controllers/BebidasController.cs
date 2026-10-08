@@ -19,18 +19,14 @@ namespace crudEbancoDist8.Controllers
     [Authorize]
     public class BebidasController : ControllerBase
     {
-        private readonly AppDbContext _context;
         private readonly IBebidasService _bebidasService;
 
-        public BebidasController(
-        AppDbContext context,
-        IBebidasService bebidasService)
+        public BebidasController(IBebidasService bebidasService)
         {
-            _context = context;
             _bebidasService = bebidasService;
         }
 
-        
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ReadBebidaDto>>> GetBebidas()
         {
@@ -171,7 +167,9 @@ namespace crudEbancoDist8.Controllers
         [FromQuery] string? name = null,
         [FromQuery] int? categoryId = null,
         [FromQuery] decimal? minPrice = null,
-        [FromQuery] decimal? maxPrice = null)
+        [FromQuery] decimal? maxPrice = null,
+        [FromQuery] int? minQuantity = null,
+        [FromQuery] int? maxQuantity = null)
         {
             if (pageNumber <= 0)
             {
@@ -188,6 +186,7 @@ namespace crudEbancoDist8.Controllers
                     message = "O tamanho da página deve estar entre 1 e 100."
                 });
             }
+
 
             orderBy = orderBy.Trim().ToLowerInvariant();
             direction = direction.Trim().ToLowerInvariant();
@@ -250,6 +249,32 @@ namespace crudEbancoDist8.Controllers
                 });
             }
 
+            if (minQuantity.HasValue && minQuantity.Value < 0)
+            {
+                return BadRequest(new
+                {
+                    message = "A quantidade mínima não pode ser negativa."
+                });
+            }
+
+            if (maxQuantity.HasValue && maxQuantity.Value < 0)
+            {
+                return BadRequest(new
+                {
+                    message = "A quantidade máxima não pode ser negativa."
+                });
+            }
+
+            if (minQuantity.HasValue &&
+                maxQuantity.HasValue &&
+                minQuantity.Value > maxQuantity.Value)
+            {
+                return BadRequest(new
+                {
+                    message = "A quantidade mínima não pode ser maior que a máxima."
+                });
+            }
+
             var resultado = await _bebidasService.GetPaginadoAsync(
                 pageNumber,
                 pageSize,
@@ -258,7 +283,9 @@ namespace crudEbancoDist8.Controllers
                 name,
                 categoryId,
                 minPrice,
-                maxPrice
+                maxPrice,
+                minQuantity,
+                maxQuantity
             );
 
             return Ok(resultado);
