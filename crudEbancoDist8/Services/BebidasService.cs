@@ -200,58 +200,48 @@ public class BebidasService : IBebidasService
         return true;
     }
     public async Task<PagedResult<ReadBebidaDto>> GetPaginadoAsync(
-    int pageNumber,
-    int pageSize,
-    string orderBy,
-    string direction,
-    string? name,
-    int? categoryId,
-    decimal? minPrice,
-    decimal? maxPrice,
-    int? minQuantity,
-    int? maxQuantity
-    )
+    BebidasQueryDto filtros)
     {
         IQueryable<Bebidas> query = _context.Bebidas
             .AsNoTracking();
 
         // Filtros
-        if (!string.IsNullOrWhiteSpace(name))
+        if (!string.IsNullOrWhiteSpace(filtros.Name))
         {
-            var nameFilter = name.Trim();
+            var nameFilter = filtros.Name.Trim();
 
             query = query.Where(b =>
                 b.Name.Contains(nameFilter));
         }
 
-        if (categoryId.HasValue)
+        if (filtros.CategoryId.HasValue)
         {
             query = query.Where(b =>
-                b.CategoryId == categoryId.Value);
+                b.CategoryId == filtros.CategoryId.Value);
         }
 
-        if (minPrice.HasValue)
+        if (filtros.MinPrice.HasValue)
         {
             query = query.Where(b =>
-                b.Price >= minPrice.Value);
+                b.Price >= filtros.MinPrice.Value);
         }
 
-        if (maxPrice.HasValue)
+        if (filtros.MaxPrice.HasValue)
         {
             query = query.Where(b =>
-                b.Price <= maxPrice.Value);
+                b.Price <= filtros.MaxPrice.Value);
         }
 
-        if (minQuantity.HasValue)
+        if (filtros.MinQuantity.HasValue)
         {
             query = query.Where(b =>
-                b.Quantity >= minQuantity.Value);
+                b.Quantity >= filtros.MinQuantity.Value);
         }
 
-        if (maxQuantity.HasValue)
+        if (filtros.MaxQuantity.HasValue)
         {
             query = query.Where(b =>
-                b.Quantity <= maxQuantity.Value);
+                b.Quantity <= filtros.MaxQuantity.Value);
         }
 
         
@@ -260,52 +250,52 @@ public class BebidasService : IBebidasService
         var totalRegistros = await query.CountAsync();
 
         var totalPaginas = (int)Math.Ceiling(
-            totalRegistros / (double)pageSize
+            totalRegistros / (double)filtros.PageSize   
         );
 
         // Ordenação
-        query = orderBy switch
+        query = filtros.OrderBy switch
         {
-            "name" => direction == "desc"
+            "name" => filtros.Direction == "desc"
                 ? query.OrderByDescending(b => b.Name)
                        .ThenByDescending(b => b.Id)
                 : query.OrderBy(b => b.Name)
                        .ThenBy(b => b.Id),
 
-            "price" => direction == "desc"
+            "price" => filtros.Direction == "desc"
                 ? query.OrderByDescending(b => b.Price)
                        .ThenByDescending(b => b.Id)
                 : query.OrderBy(b => b.Price)
                        .ThenBy(b => b.Id),
 
-            "quantity" => direction == "desc"
+            "quantity" => filtros.Direction == "desc"
                 ? query.OrderByDescending(b => b.Quantity)
                        .ThenByDescending(b => b.Id)
                 : query.OrderBy(b => b.Quantity)
                        .ThenBy(b => b.Id),
 
-            _ => direction == "desc"
+            _ => filtros.Direction == "desc"
                 ? query.OrderByDescending(b => b.Id)
                 : query.OrderBy(b => b.Id)
         };
 
         var bebidas = await query
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
+            .Skip((filtros.PageNumber - 1) * filtros.PageSize)
+            .Take(filtros.PageSize)
             .ProjectTo<ReadBebidaDto>(_mapper.ConfigurationProvider)
             .ToListAsync();
 
         return new PagedResult<ReadBebidaDto>
         {
-            PageNumber = pageNumber,
-            PageSize = pageSize,
+            PageNumber = filtros.PageNumber,
+            PageSize = filtros.PageSize,
             TotalRegistros = totalRegistros,
             TotalPaginas = totalPaginas,
-            TemPaginaAnterior = pageNumber > 1,
-            TemProximaPagina = pageNumber < totalPaginas,
+            TemPaginaAnterior = filtros.PageNumber > 1,
+            TemProximaPagina = filtros.PageNumber < totalPaginas,
             QuantidadeRetornada = bebidas.Count,
-            OrderBy = orderBy,
-            Direction = direction,
+            OrderBy = filtros.OrderBy,
+            Direction = filtros.Direction,
             Dados = bebidas,
             
         };

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using crudEbancoDist.Data;
+using crudEbancoDist8.DTOs;
 using crudEbancoDist8.Mappings;
 using crudEbancoDist8.Models;
 using crudEbancoDist8.Services;
@@ -93,29 +94,28 @@ namespace crudEbancoDist8.IntegrationTests.Services
 
             // Act: primeira página
             var primeiraPagina = await service.GetPaginadoAsync(
-                pageNumber: 1,
-                pageSize: 1,
-                orderBy: "quantity",
-                direction: "asc",
-                name: null,
-                categoryId: null,
-                minPrice: null,
-                maxPrice: null,
-                minQuantity: 10,
-                maxQuantity: 20);
+                new BebidasQueryDto
+                {
+                    PageNumber = 1,
+                    PageSize = 1,
+                    OrderBy = "quantity",
+                    Direction = "asc",
+                    MinQuantity = 10,
+                    MaxQuantity = 20
+                });
 
             // Act: segunda página
             var segundaPagina = await service.GetPaginadoAsync(
-                pageNumber: 2,
-                pageSize: 1,
-                orderBy: "quantity",
-                direction: "asc",
-                name: null,
-                categoryId: null,
-                minPrice: null,
-                maxPrice: null,
-                minQuantity: 10,
-                maxQuantity: 20);
+                new BebidasQueryDto
+                {
+                    PageNumber = 2,
+                    PageSize = 1,
+                    OrderBy = "quantity",
+                    Direction = "asc",
+                    MinQuantity = 10,
+                    MaxQuantity = 20
+                });
+                
 
             // Assert: contagem considera o filtro, antes de paginar
             Assert.Equal(2, primeiraPagina.TotalRegistros);
@@ -224,16 +224,21 @@ namespace crudEbancoDist8.IntegrationTests.Services
                 NullLogger<BebidasService>.Instance);
 
             var resultado = await service.GetPaginadoAsync(
-                 pageNumber: 1,
-                 pageSize: 10,
-                 orderBy: "quantity",
-                 direction: "asc",
-                 name: null,
-                 categoryId: null,
-                 minPrice: null,
-                 maxPrice: null,
-                 minQuantity: 100,
-                 maxQuantity: 200);
+                 new BebidasQueryDto
+                 {
+                     PageNumber = 1,
+                     PageSize = 10,
+                     OrderBy = "quantity",
+                     Direction = "asc",
+                     Name = null,
+                     CategoryId = null,
+                     MinPrice = null,
+                     MaxPrice = null,
+                     MinQuantity = 100,
+                     MaxQuantity = 200
+                 });
+
+            
 
 
 

@@ -21,17 +21,7 @@ public interface IBebidasService
     Task<bool> DeleteAsync(int id);
 
     Task<PagedResult<ReadBebidaDto>> GetPaginadoAsync(
-        int pageNumber,
-        int pageSize,
-        string orderBy,
-        string direction,
-        string? name,
-        int? categoryId,
-        decimal? minPrice,
-        decimal? maxPrice,
-        int? minQuantity,
-        int? maxQuantity
-    );
+    BebidasQueryDto filtros);
 }
 
 

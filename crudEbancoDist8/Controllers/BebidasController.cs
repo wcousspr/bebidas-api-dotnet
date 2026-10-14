@@ -159,19 +159,9 @@ namespace crudEbancoDist8.Controllers
 
         [HttpGet("paginado")]
         public async Task<ActionResult<PagedResult<ReadBebidaDto>>>
-        GetBebidasPaginadas(
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10,
-        [FromQuery] string orderBy = "id",
-        [FromQuery] string direction = "asc",
-        [FromQuery] string? name = null,
-        [FromQuery] int? categoryId = null,
-        [FromQuery] decimal? minPrice = null,
-        [FromQuery] decimal? maxPrice = null,
-        [FromQuery] int? minQuantity = null,
-        [FromQuery] int? maxQuantity = null)
+            GetBebidasPaginadas([FromQuery] BebidasQueryDto filtros)
         {
-            if (pageNumber <= 0)
+            if (filtros.PageNumber <= 0)
             {
                 return BadRequest(new
                 {
@@ -179,7 +169,7 @@ namespace crudEbancoDist8.Controllers
                 });
             }
 
-            if (pageSize <= 0 || pageSize > 100)
+            if (filtros.PageSize <= 0 || filtros.PageSize > 100)
             {
                 return BadRequest(new
                 {
@@ -188,18 +178,21 @@ namespace crudEbancoDist8.Controllers
             }
 
 
-            orderBy = orderBy.Trim().ToLowerInvariant();
-            direction = direction.Trim().ToLowerInvariant();
+            filtros.OrderBy =
+                (filtros.OrderBy ?? "").Trim().ToLowerInvariant();
+
+            filtros.Direction =
+                (filtros.Direction ?? "").Trim().ToLowerInvariant();
 
             string[] camposPermitidos =
             {
-        "id",
-        "name",
-        "price",
-        "quantity"
+                "id",
+                "name",
+                "price",
+                "quantity"
     };
 
-            if (!camposPermitidos.Contains(orderBy))
+            if (!camposPermitidos.Contains(filtros.OrderBy))
             {
                 return BadRequest(new
                 {
@@ -207,7 +200,7 @@ namespace crudEbancoDist8.Controllers
                 });
             }
 
-            if (direction != "asc" && direction != "desc")
+            if (filtros.Direction != "asc" && filtros.Direction != "desc")
             {
                 return BadRequest(new
                 {
@@ -215,7 +208,7 @@ namespace crudEbancoDist8.Controllers
                 });
             }
 
-            if (categoryId.HasValue && categoryId.Value <= 0)
+            if (filtros.CategoryId.HasValue && filtros.CategoryId.Value <= 0)
             {
                 return BadRequest(new
                 {
@@ -223,7 +216,7 @@ namespace crudEbancoDist8.Controllers
                 });
             }
 
-            if (minPrice.HasValue && minPrice.Value < 0)
+            if (filtros.MinPrice.HasValue && filtros.MinPrice.Value < 0)
             {
                 return BadRequest(new
                 {
@@ -231,7 +224,7 @@ namespace crudEbancoDist8.Controllers
                 });
             }
 
-            if (maxPrice.HasValue && maxPrice.Value < 0)
+            if (filtros.MaxPrice.HasValue && filtros.MaxPrice.Value < 0)
             {
                 return BadRequest(new
                 {
@@ -239,9 +232,9 @@ namespace crudEbancoDist8.Controllers
                 });
             }
 
-            if (minPrice.HasValue &&
-                maxPrice.HasValue &&
-                minPrice.Value > maxPrice.Value)
+            if (filtros.MinPrice.HasValue &&
+                filtros.MaxPrice.HasValue &&
+                filtros.MinPrice.Value > filtros.MaxPrice.Value)
             {
                 return BadRequest(new
                 {
@@ -249,7 +242,7 @@ namespace crudEbancoDist8.Controllers
                 });
             }
 
-            if (minQuantity.HasValue && minQuantity.Value < 0)
+            if (filtros.MinQuantity.HasValue && filtros.MinQuantity.Value < 0)
             {
                 return BadRequest(new
                 {
@@ -257,7 +250,7 @@ namespace crudEbancoDist8.Controllers
                 });
             }
 
-            if (maxQuantity.HasValue && maxQuantity.Value < 0)
+            if (filtros.MaxQuantity.HasValue && filtros.MaxQuantity.Value < 0)
             {
                 return BadRequest(new
                 {
@@ -265,9 +258,9 @@ namespace crudEbancoDist8.Controllers
                 });
             }
 
-            if (minQuantity.HasValue &&
-                maxQuantity.HasValue &&
-                minQuantity.Value > maxQuantity.Value)
+            if (filtros.MinQuantity.HasValue &&
+                filtros.MaxQuantity.HasValue &&
+                filtros.MinQuantity.Value > filtros.MaxQuantity.Value)
             {
                 return BadRequest(new
                 {
@@ -275,18 +268,9 @@ namespace crudEbancoDist8.Controllers
                 });
             }
 
-            var resultado = await _bebidasService.GetPaginadoAsync(
-                pageNumber,
-                pageSize,
-                orderBy,
-                direction,
-                name,
-                categoryId,
-                minPrice,
-                maxPrice,
-                minQuantity,
-                maxQuantity
-            );
+            var resultado =
+                await _bebidasService.GetPaginadoAsync(filtros); 
+            
 
             return Ok(resultado);
         }

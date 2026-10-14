@@ -1,6 +1,7 @@
 ﻿using crudEbancoDist8.Controllers;
 using crudEbancoDist8.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using crudEbancoDist8.DTOs;
 using Moq;
 using Xunit;
 
@@ -20,8 +21,11 @@ namespace crudEbancoDist8.Tests.Controllers
 
             // Act
             var resultado = await controller.GetBebidasPaginadas(
-                minQuantity: 30,
-                maxQuantity: 10);
+                new BebidasQueryDto
+                {
+                    MinQuantity = 30,
+                    MaxQuantity = 10
+                });
 
             // Assert
             var resposta = Assert.IsType<BadRequestObjectResult>(
@@ -31,16 +35,7 @@ namespace crudEbancoDist8.Tests.Controllers
 
             serviceMock.Verify(
                 service => service.GetPaginadoAsync(
-                    It.IsAny<int>(),
-                    It.IsAny<int>(),
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    It.IsAny<string?>(),
-                    It.IsAny<int?>(),
-                    It.IsAny<decimal?>(),
-                    It.IsAny<decimal?>(),
-                    It.IsAny<int?>(),
-                    It.IsAny<int?>()),
+                    It.IsAny<BebidasQueryDto>()),
                 Times.Never);
         }
 
@@ -57,8 +52,12 @@ namespace crudEbancoDist8.Tests.Controllers
 
             // Act
             var resultado = await controller.GetBebidasPaginadas(
-                minQuantity: -1,
-                maxQuantity: null);
+                new BebidasQueryDto
+                {
+                    MinQuantity = 30,
+                    MaxQuantity = 10
+                });
+                
 
             // Assert
             var resposta = Assert.IsType<BadRequestObjectResult>(
@@ -68,19 +67,14 @@ namespace crudEbancoDist8.Tests.Controllers
 
             serviceMock.Verify(
                 service => service.GetPaginadoAsync(
-                    It.IsAny<int>(),
-                    It.IsAny<int>(),
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    It.IsAny<string?>(),
-                    It.IsAny<int?>(),
-                    It.IsAny<decimal?>(),
-                    It.IsAny<decimal?>(),
-                    It.IsAny<int?>(),
-                    It.IsAny<int?>()),
+                    It.IsAny<BebidasQueryDto>()),
                 Times.Never);
         }
     }
+
+
+    
+
 
 
 }
