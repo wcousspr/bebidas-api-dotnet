@@ -322,7 +322,7 @@ namespace crudEbancoDist8.Migrations
                     b.HasOne("crudEbancoDist8.Models.Categoria", "Category")
                         .WithMany("Bebidas")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");

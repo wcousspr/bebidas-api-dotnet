@@ -82,16 +82,43 @@ namespace crudEbancoDist8.Controllers
         }
 
         [Authorize(Roles = AppRoles.Admin)]
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteCategoria(int id)
         {
-            var categoria = await _context.Categorias.FindAsync(id);
-            if (categoria == null)
+            if (id <= 0)
             {
-                return NotFound();
+                return BadRequest(new
+                {
+                    message = "O identificador deve ser maior que zero."
+                });
             }
+
+            var categoria = await _context.Categorias
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (categoria is null)
+            {
+                return NotFound(new
+                {
+                    message = "Categoria não encontrada."
+                });
+            }
+
+            var possuiBebidas = await _context.Bebidas
+                .AnyAsync(b => b.CategoryId == id);
+
+            if (possuiBebidas)
+            {
+                return Conflict(new
+                {
+                    message =
+                        "Não é possível excluir uma categoria que possui bebidas."
+                });
+            }
+
             _context.Categorias.Remove(categoria);
             await _context.SaveChangesAsync();
+
             return NoContent();
         }
 

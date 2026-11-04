@@ -24,6 +24,12 @@ namespace crudEbancoDist.Data
             modelBuilder.Entity<Bebidas>()
                 .Property(b => b.Price)
                 .HasPrecision(10, 2);
+
+            modelBuilder.Entity<Bebidas>()
+                .HasOne(b => b.Category)
+                .WithMany(c => c.Bebidas)
+                .HasForeignKey(b => b.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
