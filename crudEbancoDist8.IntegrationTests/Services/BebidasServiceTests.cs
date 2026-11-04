@@ -105,6 +105,67 @@ namespace crudEbancoDist8.IntegrationTests.Services
         }
 
 
+        [Fact]
+        public async Task DeleteAsync_ComBebidaExistente_DeveExcluirDoBanco()
+        {
+            // Arrange
+            await using var ambiente =
+                await BebidasTestContext.CreateAsync();
+
+            var bebida = await ambiente.Context.Bebidas
+                .AsNoTracking()
+                .SingleAsync(b => b.Name == "Bebida A");
+
+            // Act
+            var resultado =
+                await ambiente.Service.DeleteAsync(bebida.Id);
+
+            // Assert: o método informou sucesso
+            Assert.True(resultado);
+
+            // Remove entidades rastreadas antes de conferir o banco
+            ambiente.Context.ChangeTracker.Clear();
+
+            var aindaExiste = await ambiente.Context.Bebidas
+                .AnyAsync(b => b.Id == bebida.Id);
+
+            // Assert: a bebida realmente não existe mais
+            Assert.False(aindaExiste);
+        }
+
+
+        [Fact]
+        public async Task DeleteAsync_ComBebidaInexistente_DeveRetornarFalse()
+        {
+            // Arrange
+            await using var ambiente =
+                await BebidasTestContext.CreateAsync();
+
+            var idsAntes = await ambiente.Context.Bebidas
+                .OrderBy(b => b.Id)
+                .Select(b => b.Id)
+                .ToListAsync();
+
+            var idInexistente = idsAntes.Max() + 1;
+
+
+            // Act
+            var resultado =
+                await ambiente.Service.DeleteAsync(idInexistente);
+
+            Assert.False(resultado);
+
+            var idsDepois = await ambiente.Context.Bebidas
+                .OrderBy(b => b.Id)
+                .Select(b => b.Id)
+                .ToListAsync();
+
+            Assert.Equal(idsAntes, idsDepois);
+
+
+        }
+
+
 
     }
 }
