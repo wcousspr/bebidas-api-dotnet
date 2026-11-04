@@ -12,6 +12,7 @@ namespace crudEbancoDist8.Controllers
 
 
 {
+    [NonController]
     [ApiController]
     [Route("api/[controller]")]
     public class BebidasEstudoController : ControllerBase

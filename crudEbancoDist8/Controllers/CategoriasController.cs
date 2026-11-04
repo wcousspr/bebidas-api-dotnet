@@ -5,9 +5,15 @@ using Microsoft.EntityFrameworkCore;
 using static System.Net.WebRequestMethods;
 using crudEbancoDist8.DTOs;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
+using crudEbancoDist8.Authorization;
+
+
 namespace crudEbancoDist8.Controllers
+
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class CategoriasController : ControllerBase
     {
@@ -19,6 +25,7 @@ namespace crudEbancoDist8.Controllers
             _context = context;
         }
 
+        [Authorize(Roles = AppRoles.Admin)]
         [HttpGet]
 
 
@@ -30,7 +37,7 @@ namespace crudEbancoDist8.Controllers
             return categorias;
         }
 
-
+        [Authorize(Roles = AppRoles.Admin)]
         [HttpPost]
 
         public async Task<IActionResult> CreateCategoria([FromBody] CreateCategoriasDto categoriaDto)
@@ -41,6 +48,7 @@ namespace crudEbancoDist8.Controllers
             return Ok(categoria);
         }
 
+        [Authorize(Roles = AppRoles.Admin)]
         [HttpGet("{id}")]
 
         public async Task<ActionResult<ReadCategoriasDto>> GetCategoria(int id)
@@ -58,6 +66,7 @@ namespace crudEbancoDist8.Controllers
             return Ok(categoria);
         }
 
+        [Authorize(Roles = AppRoles.Admin)]
         [HttpPut("{id}")]
 
         public async Task<IActionResult> UpdateCategoria(int id, [FromBody] UpdateCategoriasDto categoriaDto)
@@ -72,6 +81,7 @@ namespace crudEbancoDist8.Controllers
             return NoContent();
         }
 
+        [Authorize(Roles = AppRoles.Admin)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCategoria(int id)
         {
