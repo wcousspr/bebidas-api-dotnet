@@ -494,3 +494,6 @@ appsettings.Local.json
 # Logs
 logs/
 *.log
+
+# Dados locais de desenvolvimento
+importar-dados.sql
