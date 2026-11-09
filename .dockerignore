@@ -1,0 +1,10 @@
+.git
+.vs
+**/bin
+**/obj
+**/.env*
+**/secrets.json
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/*.pfx
+**/*.user
