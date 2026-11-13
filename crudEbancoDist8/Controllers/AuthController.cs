@@ -6,6 +6,7 @@ using crudEbancoDist8.Interfaces;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using crudEbancoDist8.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace crudEbancoDist8.Controllers
 {
@@ -16,15 +17,18 @@ namespace crudEbancoDist8.Controllers
         private readonly UserManager<Usuario> _userManager;
         private readonly ILogger<AuthController> _logger;
         private readonly ITokenService _tokenService;
+        private readonly SignInManager<Usuario> _signInManager;
 
         public AuthController(
             UserManager<Usuario> userManager,
             ILogger<AuthController> logger,
-            ITokenService tokenService)
+            ITokenService tokenService,
+            SignInManager<Usuario> signInManager)
         {
             _userManager = userManager;
             _logger = logger;
             _tokenService = tokenService;
+            _signInManager = signInManager;
         }
             
         
@@ -105,6 +109,7 @@ namespace crudEbancoDist8.Controllers
         }
 
         [HttpPost("login")]
+        [EnableRateLimiting("login")]
         public async Task<IActionResult> Login(
             [FromBody] LoginDto dto)
         {
@@ -117,22 +122,22 @@ namespace crudEbancoDist8.Controllers
 
             if (usuario is null)
             {
-                _logger.LogWarning(
-                    "Tentativa de login com e-mail não cadastrado: {Email}",
-                    email
-                );
+                // Perform password hashing work even when the account does not exist.
+                _ = new PasswordHasher<Usuario>().VerifyHashedPassword(
+                    new Usuario(), DummyPasswordHash, dto.Password);
                 return Unauthorized(new
                 {
                     message = "Credenciais inválidas."
                 });
             }
 
-            var senhaValida = await _userManager.CheckPasswordAsync(
+            var signIn = await _signInManager.CheckPasswordSignInAsync(
                 usuario,
-                dto.Password
+                dto.Password,
+                lockoutOnFailure: true
             );
 
-            if (!senhaValida)
+            if (!signIn.Succeeded)
             {
                 return Unauthorized(new
                 {
@@ -163,6 +168,9 @@ namespace crudEbancoDist8.Controllers
             });
 
         }
+
+        private static readonly string DummyPasswordHash =
+            new PasswordHasher<Usuario>().HashPassword(new Usuario(), "dummy-login-password");
 
 
 

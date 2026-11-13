@@ -22,6 +22,10 @@ namespace crudEbancoDist.Data
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Bebidas>()
+                .Property(b => b.ImageUrl)
+                .HasMaxLength(2048);
+
+            modelBuilder.Entity<Bebidas>()
                 .Property(b => b.Price)
                 .HasPrecision(10, 2);
 
@@ -30,6 +34,11 @@ namespace crudEbancoDist.Data
                 .WithMany(c => c.Bebidas)
                 .HasForeignKey(b => b.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+
+            modelBuilder.Entity<Bebidas>()
+                .Property(b => b.ImagePublicId)
+                .HasMaxLength(255);
         }
     }
 }

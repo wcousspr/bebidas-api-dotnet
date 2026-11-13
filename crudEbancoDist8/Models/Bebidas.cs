@@ -12,5 +12,9 @@
         public int CategoryId { get; set; }
 
         public Categoria Category { get; set; } = null!;
+
+        public string? ImageUrl { get; set; }
+
+        public string? ImagePublicId { get; set; }
     }
 }
