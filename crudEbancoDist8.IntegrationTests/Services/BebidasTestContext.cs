@@ -7,6 +7,10 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
+using crudEbancoDist8.Interface;
+
+
 
 namespace crudEbancoDist8.IntegrationTests.Services
 {
@@ -105,10 +109,13 @@ namespace crudEbancoDist8.IntegrationTests.Services
 
                 var mapper = provider.GetRequiredService<IMapper>();
 
+                var imageStorageMock = new Mock<IImageStorageService>();
+
                 var service = new BebidasService(
                     context,
                     mapper,
-                    NullLogger<BebidasService>.Instance);
+                    NullLogger<BebidasService>.Instance,
+                    imageStorageMock.Object);
 
                 return new BebidasTestContext(
                     connection,

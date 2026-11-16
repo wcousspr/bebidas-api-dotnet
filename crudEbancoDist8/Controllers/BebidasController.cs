@@ -26,7 +26,7 @@ namespace crudEbancoDist8.Controllers
             _bebidasService = bebidasService;
         }
 
-
+        [AllowAnonymous]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ReadBebidaDto>>> GetBebidas()
         {
@@ -58,6 +58,56 @@ namespace crudEbancoDist8.Controllers
 
             return Ok(bebida);
         }
+
+
+        [HttpPost("{id:int}/imagem")]
+        [Authorize(Policy = AppPolicies.GerenciarBebidas)]
+        [Consumes("multipart/form-data")]
+        [RequestSizeLimit(5 * 1024 * 1024 + 65536)]
+        public async Task<IActionResult> UploadImagem(
+            int id,
+            IFormFile file,
+            CancellationToken cancellationToken)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new
+                {
+                    mensagem = "Selecione uma imagem válida."
+                });
+            }
+
+            const long maxSize = 5 * 1024 * 1024;
+
+            if (file.Length > maxSize)
+            {
+                return BadRequest(new
+                {
+                    mensagem = "A imagem deve ter no máximo 5 MB."
+                });
+            }
+
+            var imagem = await _bebidasService.UploadImageAsync(
+                id,
+                file,
+                cancellationToken);
+
+            if (imagem == null)
+            {
+                return NotFound(new
+                {
+                    mensagem = "Bebida não encontrada."
+                });
+            }
+
+            return Ok(new
+            {
+                mensagem = "Imagem cadastrada com sucesso.",
+                imageUrl = imagem.Url
+            });
+        }
+
+
 
         [Authorize(Policy = AppPolicies.GerenciarBebidas)]
         [HttpPost]

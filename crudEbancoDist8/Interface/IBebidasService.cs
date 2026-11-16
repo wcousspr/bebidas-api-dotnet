@@ -1,4 +1,9 @@
 ﻿using crudEbancoDist8.DTOs;
+using crudEbancoDist8.Interface;
+using Microsoft.AspNetCore.Http;
+
+
+
 
 namespace crudEbancoDist8.Interfaces;
 
@@ -22,6 +27,11 @@ public interface IBebidasService
 
     Task<PagedResult<ReadBebidaDto>> GetPaginadoAsync(
     BebidasQueryDto filtros);
+
+    Task<StoredImageResult?> UploadImageAsync(
+    int bebidaId,
+    IFormFile file,
+    CancellationToken cancellationToken = default);
 }
 
 

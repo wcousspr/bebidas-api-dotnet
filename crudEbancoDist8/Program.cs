@@ -1,19 +1,32 @@
 using crudEbancoDist.Data;
+using crudEbancoDist8.Authorization;
 using crudEbancoDist8.Extensions;
+using crudEbancoDist8.Interface;
 using crudEbancoDist8.Middlewares;
 using crudEbancoDist8.Models;
+using crudEbancoDist8.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
-using crudEbancoDist8.Authorization;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddControllers();
+builder.Services.AddLoginRateLimiting();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -131,13 +144,19 @@ builder.Services
         options.Password.RequireNonAlphanumeric = false;
 
         options.User.RequireUniqueEmail = true;
+        LoginSecurityExtensions.ConfigureLoginLockout(options);
     })
     .AddRoles<IdentityRole>()
+    .AddSignInManager()
     .AddEntityFrameworkStores<AppDbContext>();
 
 builder.Services.AddApplicationServices();
+builder.Services.AddScoped<IImageStorageService, CloudinaryImageStorageService>();
+
+
 
 var app = builder.Build();
+
 
 if (!app.Environment.IsEnvironment("Testing"))
 {
@@ -180,9 +199,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+app.UseCors("FrontendPolicy");
 app.UseAuthentication();
 
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 

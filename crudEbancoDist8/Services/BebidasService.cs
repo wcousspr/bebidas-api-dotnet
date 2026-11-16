@@ -6,20 +6,30 @@ using crudEbancoDist8.Controllers;
 using crudEbancoDist8.Interfaces;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using crudEbancoDist8.Interface;
 
 namespace crudEbancoDist8.Services;
 
 public class BebidasService : IBebidasService
 {
+
     private readonly AppDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<BebidasService> _logger;
-    public BebidasService(AppDbContext context, IMapper mapper, ILogger<BebidasService> logger)
+    private readonly IImageStorageService _imageStorageService;
+
+    public BebidasService(
+        AppDbContext context,
+        IMapper mapper,
+        ILogger<BebidasService> logger,
+        IImageStorageService imageStorageService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _imageStorageService = imageStorageService;
     }
+
 
     public async Task<List<ReadBebidaDto>> GetAllAsync()
     {
@@ -44,6 +54,95 @@ public class BebidasService : IBebidasService
 
         return bebida;
     }
+
+
+
+    public async Task<StoredImageResult?> UploadImageAsync(
+        int bebidaId,
+        IFormFile file,
+        CancellationToken cancellationToken = default)
+    {
+        var bebida = await _context.Bebidas
+            .FirstOrDefaultAsync(
+                b => b.Id == bebidaId,
+                cancellationToken);
+
+        if (bebida == null)
+        {
+            _logger.LogWarning(
+                "Tentativa de enviar imagem para bebida inexistente. BebidaId: {BebidaId}",
+                bebidaId);
+
+            return null;
+        }
+
+        // Guarda o identificador da imagem anterior.
+        var imagemAntigaPublicId = bebida.ImagePublicId;
+
+        // Envia a nova imagem ao Cloudinary.
+        var novaImagem = await _imageStorageService.UploadAsync(
+            file,
+            cancellationToken);
+
+        try
+        {
+            // Atualiza os dados da bebida.
+            bebida.ImageUrl = novaImagem.Url;
+            bebida.ImagePublicId = novaImagem.PublicId;
+
+            // Confirma a alteração no banco.
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            // Se o banco falhar, tenta remover a nova imagem.
+            try
+            {
+                await _imageStorageService.DeleteAsync(
+                    novaImagem.PublicId,
+                    CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Falha ao limpar imagem após erro no banco. PublicId: {PublicId}",
+                    novaImagem.PublicId);
+            }
+
+            throw;
+        }
+
+        // Somente após salvar no banco, remove a imagem antiga.
+        if (!string.IsNullOrWhiteSpace(imagemAntigaPublicId) &&
+            imagemAntigaPublicId != novaImagem.PublicId)
+        {
+            try
+            {
+                await _imageStorageService.DeleteAsync(
+                    imagemAntigaPublicId,
+                    CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                // Não desfaz a gravação: a nova imagem já está salva.
+                _logger.LogWarning(
+                    ex,
+                    "Imagem atualizada, mas não foi possível excluir a imagem anterior. PublicId: {PublicId}",
+                    imagemAntigaPublicId);
+            }
+        }
+
+        _logger.LogInformation(
+            "Imagem atualizada para bebida. BebidaId: {BebidaId}",
+            bebidaId);
+
+        return novaImagem;
+    }
+
+
+
+
 
 
     public async Task<ReadBebidaDto?> CreateAsync(CreateBebidaDto createBebidaDto)
