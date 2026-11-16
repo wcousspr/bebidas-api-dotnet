@@ -13,7 +13,7 @@ namespace crudEbancoDist8.Controllers
 
 {
     [ApiController]
-    [Authorize]
+    [Authorize(Roles = AppRoles.Admin)]
     [Route("api/[controller]")]
     public class CategoriasController : ControllerBase
     {
@@ -25,9 +25,9 @@ namespace crudEbancoDist8.Controllers
             _context = context;
         }
 
-        [Authorize(Roles = AppRoles.Admin)]
+        
         [HttpGet]
-
+        [AllowAnonymous]
 
         public async Task<ActionResult<IEnumerable<ReadCategoriasDto>>> GetCategorias()
         {
