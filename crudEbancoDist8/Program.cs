@@ -175,8 +175,7 @@ if (!app.Environment.IsEnvironment("Testing"))
 
     await IdentitySeeder.SeedRolesAsync(roleManager);
 
-    if (app.Environment.IsDevelopment() ||
-        app.Configuration.GetValue<bool>("Seed:EnableAdminPromotion"))
+    if (app.Environment.IsDevelopment())
     {
         var adminUserId =
             app.Configuration["Seed:AdminUserId"];
