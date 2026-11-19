@@ -23,7 +23,7 @@ public sealed class CompartilhamentoTests(ApiFactory factory) : IClassFixture<Ap
             Id = 42,
             Name = "Água com gás",
             Description = "  Bebida\nrefrescante.  ",
-            ImageUrl = "https://res.cloudinary.com/catalogo/image/upload/agua.jpg?a=1&b=2"
+            ImageUrl = "https://res.cloudinary.com/catalogo/image/upload/v123/agua.jpg?a=1&b=2"
         };
         using var host = ConfigurarApi(produto);
         using var cliente = CriarCliente(host);
@@ -42,12 +42,51 @@ public sealed class CompartilhamentoTests(ApiFactory factory) : IClassFixture<Ap
         Assert.Equal("Bebida refrescante.", LerMeta(html, "name", "description"));
         Assert.Equal(produto.ImageUrl, LerMeta(html, "property", "og:image"));
         Assert.Contains("a=1&amp;b=2", html);
+        Assert.DoesNotContain("og:image:type", html);
         Assert.Equal("https://api.example.test" + Rota, LerMeta(html, "property", "og:url"));
         Assert.Equal("Código dos Bares", LerMeta(html, "property", "og:site_name"));
         Assert.Equal("pt_BR", LerMeta(html, "property", "og:locale"));
         Assert.Equal("summary_large_image", LerMeta(html, "name", "twitter:card"));
         Assert.Contains("""<a id="produto-link" href="https://loja.example.test/produto/42">""", html);
         Assert.Contains("""window.location.replace(document.getElementById("produto-link").href);""", html);
+    }
+
+    [Fact]
+    public async Task UploadCloudinary_GeraPreviaJpegComDimensoesConhecidas()
+    {
+        const string imagem = "https://res.cloudinary.com/catalogo/image/upload/v123/codigo-dos-bares/produtos/agua%20com%20gas.png";
+        const string previa = "https://res.cloudinary.com/catalogo/image/upload/c_pad,b_white,w_1200,h_630/q_auto:eco/v123/codigo-dos-bares/produtos/agua%20com%20gas.jpg";
+        using var host = ConfigurarApi(new ReadBebidaDto { Id = 42, Name = "Bebida", ImageUrl = imagem });
+        using var cliente = CriarCliente(host);
+
+        var html = await cliente.GetStringAsync(Rota);
+
+        Assert.Equal(previa, LerMeta(html, "property", "og:image"));
+        Assert.Equal(previa, LerMeta(html, "property", "og:image:secure_url"));
+        Assert.Equal("image/jpeg", LerMeta(html, "property", "og:image:type"));
+        Assert.Equal("1200", LerMeta(html, "property", "og:image:width"));
+        Assert.Equal("630", LerMeta(html, "property", "og:image:height"));
+        Assert.DoesNotContain(imagem, html);
+    }
+
+    [Theory]
+    [InlineData("https://res.cloudinary.com.example.test/catalogo/image/upload/v123/agua.png")]
+    [InlineData("https://res.cloudinary.com:8443/catalogo/image/upload/v123/agua.png")]
+    [InlineData("https://res.cloudinary.com/catalogo/image/upload/s--assinatura--/v123/agua.png")]
+    [InlineData("https://res.cloudinary.com/catalogo/image/upload/c_scale,w_300/v123/agua.png")]
+    [InlineData("https://res.cloudinary.com/catalogo/image/upload/v123/agua.gif")]
+    public async Task OutrasUrlsHttps_MantemImagemSemDeclararFormatoOuDimensoes(string imagem)
+    {
+        using var host = ConfigurarApi(new ReadBebidaDto { Id = 42, Name = "Bebida", ImageUrl = imagem });
+        using var cliente = CriarCliente(host);
+
+        var html = await cliente.GetStringAsync(Rota);
+
+        Assert.Equal(imagem, LerMeta(html, "property", "og:image"));
+        Assert.DoesNotContain("og:image:secure_url", html);
+        Assert.DoesNotContain("og:image:type", html);
+        Assert.DoesNotContain("og:image:width", html);
+        Assert.DoesNotContain("og:image:height", html);
     }
 
     [Fact]

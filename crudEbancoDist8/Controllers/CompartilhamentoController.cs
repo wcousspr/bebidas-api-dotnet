@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Encodings.Web;
+using System.Text.RegularExpressions;
 using crudEbancoDist8.Interfaces;
 using crudEbancoDist8.Options;
 using Microsoft.AspNetCore.Authorization;
@@ -15,6 +16,10 @@ public sealed class CompartilhamentoController(
 {
     private const string NomeSite = "Código dos Bares";
     private const string RotaProduto = "/compartilhar/produto";
+    private const int LarguraPrevia = 1200;
+    private const int AlturaPrevia = 630;
+    private static readonly Regex UploadCloudinary = new(
+        @"^/[A-Za-z0-9_-]+/image/upload/(?=v[0-9]+/)");
 
     [AllowAnonymous]
     [HttpGet(RotaProduto + "/{id:int}")]
@@ -34,10 +39,7 @@ public sealed class CompartilhamentoController(
         var titulo = html.Encode($"{produto.Name} | {NomeSite}");
         var descricao = html.Encode(ResumirDescricao(produto.Description));
         var nomeSite = html.Encode(NomeSite);
-        var imagem = Uri.TryCreate(produto.ImageUrl, UriKind.Absolute, out var urlImagem) &&
-                     urlImagem.Scheme == Uri.UriSchemeHttps && urlImagem.UserInfo.Length == 0
-            ? $"""<meta property="og:image" content="{html.Encode(urlImagem.AbsoluteUri)}">"""
-            : "";
+        var imagem = GerarMetadadosImagem(produto.ImageUrl);
 
         return Content($"""
             <!doctype html>
@@ -64,6 +66,40 @@ public sealed class CompartilhamentoController(
             </body>
             </html>
             """, "text/html; charset=utf-8");
+    }
+
+    private static string GerarMetadadosImagem(string? imagem)
+    {
+        if (!Uri.TryCreate(imagem, UriKind.Absolute, out var url) ||
+            url.Scheme != Uri.UriSchemeHttps || url.UserInfo.Length != 0)
+        {
+            return "";
+        }
+
+        var caminho = url.AbsolutePath;
+        var upload = UploadCloudinary.Match(caminho);
+        var extensao = Path.GetExtension(caminho);
+
+        // Transforma apenas URLs versionadas de upload público no formato retornado pelo Cloudinary.
+        if (url.Host != "res.cloudinary.com" || !url.IsDefaultPort ||
+            url.Query.Length != 0 || url.Fragment.Length != 0 || !upload.Success ||
+            extensao.ToLowerInvariant() is not (".png" or ".jpg" or ".jpeg" or ".webp"))
+        {
+            return $"""<meta property="og:image" content="{HtmlEncoder.Default.Encode(url.AbsoluteUri)}">""";
+        }
+
+        var transformacao = FormattableString.Invariant(
+            $"c_pad,b_white,w_{LarguraPrevia},h_{AlturaPrevia}/q_auto:eco/");
+        var caminhoPrevia = caminho[..^extensao.Length].Insert(upload.Length, transformacao) + ".jpg";
+        var previa = HtmlEncoder.Default.Encode(url.GetLeftPart(UriPartial.Authority) + caminhoPrevia);
+
+        return FormattableString.Invariant($"""
+            <meta property="og:image" content="{previa}">
+            <meta property="og:image:secure_url" content="{previa}">
+            <meta property="og:image:type" content="image/jpeg">
+            <meta property="og:image:width" content="{LarguraPrevia}">
+            <meta property="og:image:height" content="{AlturaPrevia}">
+            """);
     }
 
     private static string ResumirDescricao(string? descricao)
