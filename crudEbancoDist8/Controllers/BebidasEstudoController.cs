@@ -217,6 +217,7 @@ namespace crudEbancoDist8.Controllers
                 {
                     Id = b.Id,
                     Name = b.Name,
+                    Description = b.Description,
                     Price = b.Price,
                     Quantity = b.Quantity,
                     Category = b.Category.Name
@@ -243,6 +244,7 @@ namespace crudEbancoDist8.Controllers
                 {
                     Id = b.Id,
                     Name = b.Name,
+                    Description = b.Description,
                     Price = b.Price,
                     Quantity = b.Quantity,
                     Category = b.Category.Name
@@ -265,6 +267,7 @@ namespace crudEbancoDist8.Controllers
                 {
                     Id = b.Id,
                     Name = b.Name,
+                    Description = b.Description,
                     Price = b.Price,
                     Quantity = b.Quantity,
                     Category = b.Category.Name
@@ -306,6 +309,7 @@ namespace crudEbancoDist8.Controllers
                 {
                     Id = b.Id,
                     Name = b.Name,
+                    Description = b.Description,
                     Price = b.Price,
                     Quantity = b.Quantity,
                     Category = b.Category.Name
@@ -356,6 +360,7 @@ namespace crudEbancoDist8.Controllers
                 {
                     Id = b.Id,
                     Name = b.Name,
+                    Description = b.Description,
                     Price = b.Price,
                     Quantity = b.Quantity,
                     Category = b.Category.Name
