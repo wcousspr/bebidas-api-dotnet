@@ -16,6 +16,50 @@ namespace crudEbancoDist8.IntegrationTests.Services
     public class BebidasServiceTests
     {
         [Fact]
+        public async Task Descricao_DeveSerSalvaAtualizadaERemovida()
+        {
+            await using var ambiente = await BebidasTestContext.CreateAsync();
+            var categoria = await ambiente.Context.Categorias.FirstAsync();
+            Assert.All(await ambiente.Service.GetAllAsync(), bebida => Assert.Null(bebida.Description));
+
+            var criada = await ambiente.Service.CreateAsync(new CreateBebidaDto
+            {
+                Name = "Bebida de teste",
+                Price = 10,
+                CategoryId = categoria.Id,
+                Description = "Descrição inicial"
+            });
+
+            Assert.NotNull(criada);
+            Assert.Equal("Descrição inicial", criada.Description);
+            Assert.Equal("Descrição inicial", (await ambiente.Service.GetByIdAsync(criada.Id))?.Description);
+
+            var edicao = new UpdateBebidaDto
+            {
+                Name = criada.Name,
+                Price = criada.Price,
+                CategoryId = categoria.Id,
+                Description = "Descrição atualizada"
+            };
+            var (atualizada, erro) = await ambiente.Service.UpdateAsync(criada.Id, edicao);
+
+            Assert.Null(erro);
+            Assert.Equal("Descrição atualizada", atualizada?.Description);
+            var catalogo = await ambiente.Service.GetAllAsync();
+            Assert.Equal("Descrição atualizada", Assert.Single(catalogo, bebida => bebida.Id == criada.Id).Description);
+
+            edicao.Description = null;
+            var (semDescricao, erroRemocao) = await ambiente.Service.UpdateAsync(criada.Id, edicao);
+
+            Assert.Null(erroRemocao);
+            Assert.NotNull(semDescricao);
+            Assert.Null(semDescricao.Description);
+            var persistida = await ambiente.Service.GetByIdAsync(criada.Id);
+            Assert.NotNull(persistida);
+            Assert.Null(persistida.Description);
+        }
+
+        [Fact]
         public async Task GetPaginadoAsync_ComIntervaloDeQuantidade_DeveFiltrarAntesDePaginar()
         {
             await using var ambiente =

@@ -11,6 +11,9 @@ namespace crudEbancoDist8.DTOs
         ErrorMessage = "O nome deve ter entre 2 e 100 caracteres.")]
         public string Name { get; set; } = string.Empty;
 
+        [StringLength(1000, ErrorMessage = "A descrição deve ter no máximo 1000 caracteres.")]
+        public string? Description { get; set; }
+
         [Range(0.01, 10000,
             ErrorMessage = "O preço deve ser maior que zero.")]
         public decimal Price { get; set; }

@@ -173,6 +173,7 @@ public class BebidasService : IBebidasService
         {
             Id = bebida.Id,
             Name = bebida.Name,
+            Description = bebida.Description,
             Price = bebida.Price,
             Quantity = bebida.Quantity,
             Category = categoria.Name
@@ -222,6 +223,7 @@ public class BebidasService : IBebidasService
         {
             Id = bebida.Id,
             Name = bebida.Name,
+            Description = bebida.Description,
             Price = bebida.Price,
             Quantity = bebida.Quantity,
             Category = categoria.Name

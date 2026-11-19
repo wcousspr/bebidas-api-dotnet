@@ -166,6 +166,10 @@ namespace crudEbancoDist8.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<string>("ImagePublicId")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");

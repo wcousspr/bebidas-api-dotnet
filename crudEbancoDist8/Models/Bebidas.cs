@@ -1,10 +1,15 @@
-﻿namespace crudEbancoDist8.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace crudEbancoDist8.Models
 {
     public class Bebidas
     {
 
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+
+        [StringLength(1000)]
+        public string? Description { get; set; }
         public decimal Price { get; set; } = 0;
 
         public int Quantity { get; set; } = 0;
