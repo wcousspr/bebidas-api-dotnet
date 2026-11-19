@@ -4,6 +4,7 @@ using crudEbancoDist8.Extensions;
 using crudEbancoDist8.Interface;
 using crudEbancoDist8.Middlewares;
 using crudEbancoDist8.Models;
+using crudEbancoDist8.Options;
 using crudEbancoDist8.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -28,6 +29,13 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddOptions<CompartilhamentoOptions>()
+    .BindConfiguration(CompartilhamentoOptions.SectionName)
+    .Validate(
+        options => CompartilhamentoOptions.IsHttpOrigin(options.ApiBaseUrl) &&
+                   CompartilhamentoOptions.IsHttpOrigin(options.FrontendBaseUrl),
+        "As URLs base de compartilhamento devem ser origens HTTP ou HTTPS válidas.")
+    .ValidateOnStart();
 builder.Services.AddLoginRateLimiting();
 
 builder.Services.AddEndpointsApiExplorer();
