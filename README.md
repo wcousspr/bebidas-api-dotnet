@@ -1,10 +1,10 @@
 # Bebidas API
 
-API REST para gerenciamento de bebidas e categorias, desenvolvida com **ASP.NET Core 8**, **Entity Framework Core** e **SQL Server**. O projeto inclui autenticação JWT, autorização por roles, testes automatizados e execução com Docker Compose.
+API REST para gerenciamento de bebidas e categorias, desenvolvida com **ASP.NET Core 10 LTS**, **Entity Framework Core** e **SQL Server**. O projeto inclui autenticação JWT, autorização por roles, testes automatizados e execução com Docker Compose.
 
 ## Tecnologias
 
-- C# e .NET 8 / ASP.NET Core Web API
+- C# e .NET 10 LTS / ASP.NET Core Web API
 - Entity Framework Core e SQL Server 2022
 - ASP.NET Core Identity e JWT Bearer
 - AutoMapper
@@ -37,14 +37,24 @@ API REST para gerenciamento de bebidas e categorias, desenvolvida com **ASP.NET 
 
 ## Pré-requisitos
 
-- .NET SDK 8 (para migrations e execução fora do Docker)
+- .NET SDK 10.0.404, conforme `global.json`, para build, testes e uso do EF fora do Docker
 - Docker Desktop com Docker Compose
-- Ferramenta `dotnet-ef` compatível com EF Core 8 (para aplicar migrations)
 
-Instalação da ferramenta, se necessário:
+Na raiz, confirme o SDK selecionado e compile a solução. O `global.json` aceita patches estáveis na faixa 10.0.4xx.
 
 ```powershell
-dotnet tool install --global dotnet-ef --version "8.0.*"
+dotnet --version
+dotnet restore crudEbancoDist8.slnx
+dotnet build crudEbancoDist8.slnx --configuration Release --no-restore
+```
+
+O manifesto local fixa a ferramenta EF Core. Restaure-a dentro do projeto da API para usar a versão do repositório:
+
+```powershell
+Push-Location .\crudEbancoDist8
+dotnet tool restore
+dotnet tool run dotnet-ef --version
+Pop-Location
 ```
 
 ## Executando com Docker Compose (desenvolvimento local)
@@ -79,7 +89,9 @@ No **PowerShell do Windows**, na raiz do repositório, carregue a senha do `.env
 $env:SQL_SA_PASSWORD = (Get-Content .env | Where-Object { $_ -match '^SQL_SA_PASSWORD=' } | Select-Object -First 1) -replace '^SQL_SA_PASSWORD=', ''
 $env:ConnectionStrings__DefaultConnection = "Server=tcp:127.0.0.1,1433;Database=DistribuidoraDb;User Id=sa;Password=$env:SQL_SA_PASSWORD;Encrypt=True;TrustServerCertificate=True"
 
-dotnet ef database update --project .\crudEbancoDist8 --startup-project .\crudEbancoDist8
+Push-Location .\crudEbancoDist8
+dotnet tool run dotnet-ef database update
+Pop-Location
 ```
 
 > Esse comando é voltado ao ambiente local Windows, com a porta 1433 do banco Docker publicada em `127.0.0.1`. Não use a connection string do LocalDB ao aplicar migrations no Docker.
@@ -112,10 +124,12 @@ dotnet user-secrets set "Jwt:Issuer" "SEU_ISSUER" --project .\crudEbancoDist8
 dotnet user-secrets set "Jwt:Audience" "SUA_AUDIENCE" --project .\crudEbancoDist8
 ```
 
-Em seguida, aplique as migrations ao banco configurado e execute a API:
+Para inicializar um banco de desenvolvimento vazio, aplique as migrations existentes e execute a API:
 
 ```powershell
-dotnet ef database update --project .\crudEbancoDist8 --startup-project .\crudEbancoDist8
+Push-Location .\crudEbancoDist8
+dotnet tool run dotnet-ef database update
+Pop-Location
 dotnet run --project .\crudEbancoDist8
 ```
 
@@ -127,14 +141,40 @@ Endpoints protegidos podem exigir a role **Admin**. Uma conta recém-cadastrada 
 
 ## Testes e integração contínua
 
-Execute os testes unitários e de integração a partir da raiz:
+Após restore e build Release, execute os testes unitários e de integração a partir da raiz:
 
 ```powershell
-dotnet test .\crudEbancoDist8.Tests
-dotnet test .\crudEbancoDist8.IntegrationTests
+dotnet test crudEbancoDist8.slnx --configuration Release --no-build --no-restore
+dotnet package list --project crudEbancoDist8.slnx --include-transitive --no-restore
+dotnet package list --project crudEbancoDist8.slnx --include-transitive --vulnerable --no-restore
 ```
 
-O repositório também possui um fluxo de integração contínua com GitHub Actions para validação automatizada.
+O GitHub Actions usa o SDK definido em `global.json`, audita dependências diretas e transitivas e executa o build e os testes. Falhas de acesso ao feed ou aos dados de advisories invalidam a verificação.
+
+## Validação da migração para .NET 10
+
+Use configuração de teste e um SQL Server isolado. Após o build Release, verifique o modelo contra o snapshot e gere o SQL para inspeção:
+
+```powershell
+Push-Location .\crudEbancoDist8
+dotnet tool run dotnet-ef migrations has-pending-model-changes --context AppDbContext --configuration Release --no-build
+dotnet tool run dotnet-ef migrations script --idempotent --context AppDbContext --configuration Release --no-build
+Pop-Location
+```
+
+A geração do script serve para revisão. Se houver divergência no modelo, identifique a alteração antes de criar uma migration. Em banco isolado, valide a cadeia existente, a precisão do preço, as chaves estrangeiras, o schema do Identity, o cadastro em lote e os resultados de filtros e paginação. Exercite as versões antiga e nova sobre o mesmo schema para confirmar a reversibilidade.
+
+Depois de iniciar a API com o Compose, confirme a configuração do container e a leitura pública:
+
+```powershell
+docker compose exec -T api dotnet --list-runtimes
+docker compose exec -T api id
+docker compose port api 8080
+docker compose logs --tail=50 api
+curl.exe --fail --silent --show-error http://localhost:8080/api/bebidas
+```
+
+Em staging, compare os contratos HTTP com a versão anterior, incluindo tokens emitidos nos dois runtimes sob a mesma configuração de teste, autenticação, CRUD, CORS, uploads e Open Graph. Registre o artefato da versão anterior e as configurações de publicação. Se a nova versão falhar e o schema estiver preservado, restaure a imagem anterior e repita as verificações de saúde e leitura. Uma mudança de schema exige um plano próprio de compatibilidade entre versões.
 
 ## Segurança e observações
 
