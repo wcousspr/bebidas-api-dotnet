@@ -29,18 +29,27 @@ jobs:
       - name: Install .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: |
-            8.0.x
-            10.0.x
+          global-json-file: global.json
 
       - name: Show .NET environment
         run: dotnet --info
 
       - name: Restore dependencies
-        run: dotnet restore crudEbancoDist8.slnx
+        run: |
+          if ! dotnet restore crudEbancoDist8.slnx -p:NuGetAudit=true -p:NuGetAuditMode=all '-warnAsError:NU1900;NU1905'; then
+            echo "::error::Restore or NuGet Audit failed. NU1301 indicates a source access failure, and NU1900/NU1905 indicate unavailable advisory data."
+            exit 1
+          fi
+
+      - name: Audit direct and transitive dependencies
+        run: |
+          if ! dotnet package list --project crudEbancoDist8.slnx --include-transitive --vulnerable --no-restore; then
+            echo "::error::The NuGet advisory query did not complete. Check package source connectivity and the audit output."
+            exit 1
+          fi
 
       - name: Build solution
         run: dotnet build crudEbancoDist8.slnx --configuration Release --no-restore
 
       - name: Run tests
-        run: dotnet test crudEbancoDist8.slnx --configuration Release --no-build --verbosity normal
+        run: dotnet test crudEbancoDist8.slnx --configuration Release --no-build --no-restore --verbosity normal
