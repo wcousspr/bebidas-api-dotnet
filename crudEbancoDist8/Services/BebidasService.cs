@@ -104,10 +104,9 @@ public class BebidasService : IBebidasService
             }
             catch (Exception ex)
             {
-                _logger.LogError(
-                    ex,
-                    "Falha ao limpar imagem após erro no banco. PublicId: {PublicId}",
-                    novaImagem.PublicId);
+                _logger.LogWarning(
+                    "Falha ao limpar imagem após erro no banco. BebidaId: {BebidaId}, ErrorType: {ErrorType}",
+                    bebidaId, ex.GetType().Name);
             }
 
             throw;
@@ -127,9 +126,8 @@ public class BebidasService : IBebidasService
             {
                 // Não desfaz a gravação: a nova imagem já está salva.
                 _logger.LogWarning(
-                    ex,
-                    "Imagem atualizada, mas não foi possível excluir a imagem anterior. PublicId: {PublicId}",
-                    imagemAntigaPublicId);
+                    "Imagem atualizada, mas não foi possível excluir a imagem anterior. BebidaId: {BebidaId}, ErrorType: {ErrorType}",
+                    bebidaId, ex.GetType().Name);
             }
         }
 

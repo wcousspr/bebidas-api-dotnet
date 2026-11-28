@@ -34,6 +34,7 @@ namespace crudEbancoDist8.Controllers
         
 
         [HttpPost("register")]
+        [crudEbancoDist8.Data.RequiresInitializedRoles]
         public async Task<IActionResult> Register(
             [FromBody] RegisterDto dto)
         {
@@ -109,6 +110,7 @@ namespace crudEbancoDist8.Controllers
         }
 
         [HttpPost("login")]
+        [crudEbancoDist8.Data.RequiresInitializedRoles]
         [EnableRateLimiting("login")]
         public async Task<IActionResult> Login(
             [FromBody] LoginDto dto)

@@ -7,9 +7,14 @@ namespace crudEbancoDist8.Services;
 
 public class CloudinaryImageStorageService : IImageStorageService
 {
-    private readonly Cloudinary _cloudinary;
+    private readonly Lazy<Cloudinary> _cloudinary;
 
     public CloudinaryImageStorageService(IConfiguration configuration)
+    {
+        _cloudinary = new Lazy<Cloudinary>(() => CreateClient(configuration));
+    }
+
+    private static Cloudinary CreateClient(IConfiguration configuration)
     {
         var cloudName = configuration["Cloudinary:CloudName"];
         var apiKey = configuration["Cloudinary:ApiKey"];
@@ -28,7 +33,7 @@ public class CloudinaryImageStorageService : IImageStorageService
             apiKey,
             apiSecret);
 
-        _cloudinary = new Cloudinary(account);
+        return new Cloudinary(account);
     }
 
     public async Task<StoredImageResult> UploadAsync(
@@ -69,7 +74,7 @@ public class CloudinaryImageStorageService : IImageStorageService
             UniqueFilename = true
         };
 
-        var result = await _cloudinary.UploadAsync(
+        var result = await _cloudinary.Value.UploadAsync(
             uploadParams,
             cancellationToken);
 
@@ -105,7 +110,7 @@ public class CloudinaryImageStorageService : IImageStorageService
             ResourceType = ResourceType.Image
         };
 
-        var result = await _cloudinary.DestroyAsync(deleteParams);
+        var result = await _cloudinary.Value.DestroyAsync(deleteParams);
 
         if (result.Error != null ||
             (result.Result != "ok" && result.Result != "not found"))
