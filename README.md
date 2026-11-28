@@ -111,7 +111,7 @@ Para verificar logs:
 docker compose logs --tail=50 api
 ```
 
-> O banco Docker é independente do LocalDB. Usuários e dados de outros bancos não são copiados automaticamente. O seed inicializa as roles necessárias, mas não cria automaticamente uma conta Admin comum. A promoção inicial de um usuário deve ser feita de forma controlada e a configuração temporária `Seed__AdminUserId` deve ser removida após o uso.
+> O banco Docker é independente do LocalDB. O seed inicializa as roles `Admin` e `User`. Para promover um usuário em um banco local que já possui um administrador, autentique-se com essa conta e use `POST /api/account/users/{userId}/roles/admin`. Um banco local novo não tem bootstrap automático de administrador. O provisionamento da primeira conta precisa de um procedimento explícito e aprovado para esse banco isolado.
 
 ## Executando sem Docker
 

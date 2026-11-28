@@ -12,9 +12,29 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Diagnostics;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Keep the native request Activity active when hosting diagnostics are filtered.
+using var requestActivityListener = new ActivityListener
+{
+    ShouldListenTo = source => source.Name == "Microsoft.AspNetCore",
+    Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.PropagationData,
+    SampleUsingParentId = (ref ActivityCreationOptions<string> _) => ActivitySamplingResult.PropagationData
+};
+ActivitySource.AddActivityListener(requestActivityListener);
+
+if (builder.Environment.IsProduction())
+{
+    builder.Logging.AddJsonConsole(options =>
+    {
+        options.IncludeScopes = false;
+        options.UseUtcTimestamp = true;
+        options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
+    });
+}
 
 builder.Services.AddCors(options =>
 {
@@ -28,7 +48,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<ProblemTraceFilter>());
 builder.Services.AddOptions<CompartilhamentoOptions>()
     .BindConfiguration(CompartilhamentoOptions.SectionName)
     .Validate(
@@ -138,7 +158,7 @@ builder.Services.AddAuthorization(options =>
 
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(
+    options.EnableSensitiveDataLogging(false).UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
         sqlOptions =>
         {
@@ -170,37 +190,12 @@ builder.Services
 
 builder.Services.AddApplicationServices();
 builder.Services.AddScoped<IImageStorageService, CloudinaryImageStorageService>();
+builder.Services.AddOperationalHealth(builder.Environment.IsEnvironment("Testing"));
 
 
 
 var app = builder.Build();
 
-
-if (!app.Environment.IsEnvironment("Testing"))
-{
-    using var scope = app.Services.CreateScope();
-
-    var roleManager = scope.ServiceProvider
-        .GetRequiredService<RoleManager<IdentityRole>>();
-
-    await IdentitySeeder.SeedRolesAsync(roleManager);
-
-    if (app.Environment.IsDevelopment())
-    {
-        var adminUserId =
-            app.Configuration["Seed:AdminUserId"];
-
-        if (!string.IsNullOrWhiteSpace(adminUserId))
-        {
-            var userManager = scope.ServiceProvider
-                .GetRequiredService<UserManager<Usuario>>();
-
-            await IdentitySeeder.SeedAdminAsync(
-                userManager,
-                adminUserId);
-        }
-    }
-}
 
 app.UseMiddleware<ExceptionMiddleware>();
 
@@ -215,7 +210,8 @@ if (app.Environment.IsDevelopment())
 
 
 
-app.UseHttpsRedirection();
+app.UseWhen(context => !context.Request.Path.StartsWithSegments("/health"),
+    branch => branch.UseHttpsRedirection());
 
 app.UseRouting();
 app.UseCors("FrontendPolicy");
@@ -223,6 +219,8 @@ app.UseAuthentication();
 
 app.UseAuthorization();
 app.UseRateLimiter();
+app.UseRoleInitializationGate();
+app.MapOperationalHealth();
 
 app.MapControllers();
 

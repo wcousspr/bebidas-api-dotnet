@@ -22,8 +22,13 @@ namespace crudEbancoDist.Data
 
                 if (!roleExists)
                 {
-                    await roleManager.CreateAsync(
+                    var result = await roleManager.CreateAsync(
                         new IdentityRole(role));
+                    if (!result.Succeeded && !await roleManager.RoleExistsAsync(role))
+                    {
+                        throw new InvalidOperationException(
+                            "Não foi possível inicializar as roles obrigatórias.");
+                    }
                 }
             }
         }

@@ -74,6 +74,7 @@ namespace crudEbancoDist8.Controllers
         
         [Authorize(Policy = AppPolicies.GerenciarUsuarios)]
         [HttpPost("users/{userId}/roles/admin")]
+        [crudEbancoDist8.Data.RequiresInitializedRoles]
         public async Task<IActionResult> PromoteToAdmin(
         [FromRoute] string userId)
         {
